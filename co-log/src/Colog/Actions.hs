@@ -72,7 +72,7 @@ logByteStringHandle handle = LogAction $ liftIO . BS8.hPutStrLn handle
 {-# SPECIALIZE logByteStringHandle :: Handle -> LogAction IO BS.ByteString #-}
 
 {- | Action that prints 'BS.ByteString' to file. See
-'Colog.Core.Action.withLogStringFile' for details.
+'Colog.Core.IO.withLogStringFile' for details.
 -}
 withLogByteStringFile :: MonadIO m => FilePath -> (LogAction m BS.ByteString -> IO r) -> IO r
 withLogByteStringFile path action = withFile path AppendMode $ \handle ->
@@ -112,7 +112,7 @@ logTextHandle handle = LogAction $ liftIO . TIO.hPutStrLn handle
 {-# SPECIALIZE logTextHandle :: Handle -> LogAction IO T.Text #-}
 
 {- | Action that prints 'T.Text' to file. See
-'Colog.Core.Action.withLogStringFile' for details.
+'Colog.Core.IO.withLogStringFile' for details.
 -}
 withLogTextFile :: MonadIO m => FilePath -> (LogAction m T.Text -> IO r) -> IO r
 withLogTextFile path action = withFile path AppendMode $ \handle ->
