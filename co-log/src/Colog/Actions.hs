@@ -23,6 +23,8 @@ module Colog.Actions
          -- $msg
        , simpleMessageAction
        , richMessageAction
+       , withLogMessageFile
+       , withLogRichMessageFile
        ) where
 
 import Control.Monad.IO.Class (MonadIO (..))
@@ -30,7 +32,7 @@ import Data.Semigroup ((<>))
 import Data.Text.Encoding (encodeUtf8)
 import System.IO (Handle, IOMode (AppendMode), stderr, withFile)
 
-import Colog.Core.Action (LogAction (..), cmapM, (>$<))
+import Colog.Core.Action (LogAction (..), cmap, cmapM, (>$<))
 import Colog.Core.IO (logFlush)
 import Colog.Message (Message, defaultFieldMap, fmtMessage, fmtRichMessageDefault,
                       upgradeMessageAction)
@@ -134,6 +136,19 @@ simpleMessageAction = encodeUtf8 . fmtMessage >$< logByteStringStdout
 {-# INLINE simpleMessageAction #-}
 {-# SPECIALIZE simpleMessageAction :: LogAction IO Message #-}
 
+{- | Action that prints 'Message' to file. See
+'Colog.Core.IO.withLogStringFile' for details.
+-}
+withLogMessageFile
+  :: MonadIO m
+  => FilePath
+  -> (LogAction m Message -> IO r)
+  -> IO r
+withLogMessageFile path action = withFile path AppendMode $ \handle ->
+  action $ cmap fmtMessage (logTextHandle handle) <> logFlush handle
+{-# INLINE withLogMessageFile #-}
+{-# SPECIALIZE withLogMessageFile :: FilePath -> (LogAction IO Message -> IO r) -> IO r #-}
+
 {- | Action that constructs 'Colog.Message.RichMessage' and prints formatted
 'Message' for it to 'stdout'.
 -}
@@ -142,3 +157,17 @@ richMessageAction = upgradeMessageAction defaultFieldMap $
     cmapM (fmap encodeUtf8 . fmtRichMessageDefault) logByteStringStdout
 {-# INLINE richMessageAction #-}
 {-# SPECIALIZE richMessageAction :: LogAction IO Message #-}
+
+{- | Action that constructs 'Colog.Message.RichMessage' and prints formatted
+'Message' for it to file. See 'Colog.Core.IO.withLogStringFile' for details.
+-}
+withLogRichMessageFile
+  :: MonadIO m
+  => FilePath
+  -> (LogAction m Message -> IO r)
+  -> IO r
+withLogRichMessageFile path action = withFile path AppendMode $ \handle ->
+  action . upgradeMessageAction defaultFieldMap $
+    cmapM fmtRichMessageDefault (logTextHandle handle) <> logFlush handle
+{-# INLINE withLogRichMessageFile #-}
+{-# SPECIALIZE withLogRichMessageFile :: FilePath -> (LogAction IO Message -> IO r) -> IO r #-}
